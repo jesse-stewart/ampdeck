@@ -21,7 +21,7 @@ impl Default for App {
             track_index: 0,
             is_playing: false,
             is_paused: false,
-            track_list: vec!["01 Intro.mp3", "StarWars3.wav", "Sample_BeeMoved_96kHz24bit.flac", "07 - Bitty Mclean - Dedicated To The One I Love.mp3"],
+            track_list: vec!["tracks/01 Intro.mp3", "tracks/StarWars3.wav", "tracks/Sample_BeeMoved_96kHz24bit.flac", "tracks/07 - Bitty Mclean - Dedicated To The One I Love.mp3"],
             volume: 0.5,
         }
     }
