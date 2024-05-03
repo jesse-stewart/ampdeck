@@ -59,4 +59,12 @@ impl Audio {
         }
     }
     
+    pub async fn set_volume(&self, volume: f32) {
+        let sink_clone = self.sink.clone();
+        let mut sink_guard = sink_clone.lock().await; // Correctly await the lock here
+        if let Some(sink) = sink_guard.as_mut() {
+            sink.set_volume(volume);
+        }
+    }
+    
 }

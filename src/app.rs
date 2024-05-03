@@ -11,6 +11,7 @@ pub struct App {
     pub is_playing: bool,
     pub is_paused: bool,
     pub track_list: Vec<&'static str>,
+    pub volume: f32,
 }
 
 impl Default for App {
@@ -21,6 +22,7 @@ impl Default for App {
             is_playing: false,
             is_paused: false,
             track_list: vec!["01 Intro.mp3", "StarWars3.wav", "Sample_BeeMoved_96kHz24bit.flac", "07 - Bitty Mclean - Dedicated To The One I Love.mp3"],
+            volume: 0.5,
         }
     }
 }
@@ -49,6 +51,22 @@ impl App {
         if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
         }
+    }
+
+    pub fn set_volume(&mut self, volume: f32) {
+        self.volume = volume;
+    }
+
+    pub fn increase_volume(&mut self) {
+        const VOLUME_INCREMENT: f32 = 0.01;
+        let new_volume = (self.volume + VOLUME_INCREMENT).min(1.0); // Ensure volume doesn't exceed 1.0
+        self.set_volume(new_volume);
+    }
+    
+    pub fn decrease_volume(&mut self) {
+        const VOLUME_DECREMENT: f32 = 0.01;
+        let new_volume = (self.volume - VOLUME_DECREMENT).max(0.0); // Ensure volume doesn't go below 0.0
+        self.set_volume(new_volume);
     }
 
     pub fn play_audio(&mut self) -> AppResult<()> {

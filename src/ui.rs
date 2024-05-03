@@ -22,10 +22,12 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                  \n\
                 index: {}\n\
                 Is Playing: {}\n\
-                is Paused: {}",
+                is Paused: {}\n\
+                Volume: {}",
             app.track_index,
             app.is_playing,
-            app.is_paused
+            app.is_paused,
+            app.volume,
         ))
         .block(
             Block::bordered()

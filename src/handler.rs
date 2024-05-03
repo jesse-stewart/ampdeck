@@ -33,8 +33,18 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
         KeyCode::Left => {
             app.decrement_track_index();
         }
-        // Other handlers you could add here.
-        _ => {}
+        // Volume handlers
+        KeyCode::Up => {
+            app.increase_volume();
+        }
+        KeyCode::Down => {
+            app.decrease_volume();
+        }
+        // print the key event for debugging
+        _ => {
+            println!("{:?}", key_event);
+        }
+        
     }
     Ok(())
 }

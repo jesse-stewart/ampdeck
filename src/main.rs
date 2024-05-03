@@ -29,6 +29,9 @@ async fn async_main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
+    let mut previous_volume = app.volume;
+    let mut previous_index = app.track_index;
+
     // Start the main loop.
     while app.running {
         // Render the user interface.
@@ -37,8 +40,11 @@ async fn async_main() -> AppResult<()> {
         match tui.events.next()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
-                let previous_index = app.track_index;
                 handle_key_events(key_event, &mut app)?;
+                if app.volume != previous_volume {
+                    audio.set_volume(app.volume).await;
+                    previous_volume = app.volume; // Update previous volume to the new value
+                }
                 // Determine if track has changed
                 if app.track_index != previous_index {
                     // Track has changed: stop previous and play new
@@ -46,6 +52,7 @@ async fn async_main() -> AppResult<()> {
                     let path = app.track_list[app.track_index].to_string();
                     audio.play(&path).await;
                     app.is_paused = false; // Reset pause state when track changes
+                    previous_index = app.track_index; // Update previous index to the new value
                 } else if app.is_paused {
                     // If paused, no action needed unless pause toggle requested
                 } else if !app.is_playing {
