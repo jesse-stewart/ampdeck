@@ -11,4 +11,7 @@ ratatui = "0.26.0"
 reqwest = { version = "0.11", features = ["json"] }
 rodio = "0.17.3"
 tokio = { version = "1", features = ["full"] }
-
+walkdir = "2"
+wav = "1.0.0"
+mp3-metadata = "0.3.4"
+metaflac = "0.2.5"

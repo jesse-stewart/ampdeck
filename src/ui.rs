@@ -20,16 +20,28 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 Play/Pause with `Spacebar`.\n\
                 Stop with `s`.\n\
                  \n\
+                title: {}\n\
+                artist: {}\n\
+                album: {}\n\
                 index: {}\n\
-                Is Playing: {}\n\
-                is Paused: {}\n\
+                Playing: {}\n\
+                Paused: {}\n\
                 Volume: {}\n\
-                auto_next_track: {}",
+                auto_next_track: {}\n\
+                track_duration: {}\n\
+                track_progress: {}\n\
+                sink_empty: {}",
+            app.track_title,
+            app.track_artist,
+            app.track_album,
             app.track_index,
-            app.is_playing,
-            app.is_paused,
+            app.playing,
+            app.paused,
             app.volume,
-            app.auto_next_track
+            app.auto_next_track,
+            app.track_duration,
+            app.track_progress,
+            app.sink_empty
         ))
         .block(
             Block::bordered()
