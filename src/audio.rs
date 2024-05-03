@@ -1,8 +1,7 @@
 use rodio::{Decoder, OutputStreamHandle, Sink};
 use std::{fs::File, io::Read, io::Cursor, sync::Arc};
-use tokio::{task, sync::Mutex};
+use tokio::sync::Mutex;
 
-use crate::app::App;
 
 pub struct Audio {
     stream_handle: OutputStreamHandle,
