@@ -23,7 +23,7 @@ impl Default for App {
             is_playing: false,
             is_paused: false,
             track_list: vec!["tracks/01 Intro.mp3", "tracks/StarWars3.wav", "tracks/Sample_BeeMoved_96kHz24bit.flac", "tracks/07 - Bitty Mclean - Dedicated To The One I Love.mp3"],
-            volume: 0.5,
+            volume: 0.05,
             auto_next_track: true,
         }
     }
