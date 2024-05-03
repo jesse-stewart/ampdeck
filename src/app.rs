@@ -61,7 +61,12 @@ impl App {
         audio.stop().await;
         if self.track_index < self.track_list.len() - 1 {
             self.track_index += 1;
-            audio.play(&self.track_list[self.track_index], self.volume).await;
+            if self.playing {
+                audio.play(&self.track_list[self.track_index], self.volume).await;
+            }
+            if self.paused {
+                audio.pause().await;
+            }
         }
     }
 
@@ -69,7 +74,12 @@ impl App {
         audio.stop().await;
         if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
-            audio.play(&self.track_list[self.track_index], self.volume).await;
+            if self.playing {
+                audio.play(&self.track_list[self.track_index], self.volume).await;
+            }
+            if self.paused {
+                audio.pause().await;
+            }
         }
     }
 
