@@ -43,7 +43,7 @@ async fn async_main() -> AppResult<()> {
             let next_track = app.track_index + 1;
             if next_track < app.track_list.len() {
                 app.track_index = next_track;
-                audio.play(&app.track_list[app.track_index], app.volume).await;
+                let _ = audio.play(&app.track_list[app.track_index], app.volume).await;
             }
         }
         let meta = Meta::new();

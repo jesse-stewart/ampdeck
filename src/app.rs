@@ -62,7 +62,7 @@ impl App {
         if self.track_index < self.track_list.len() - 1 {
             self.track_index += 1;
             if self.playing {
-                audio.play(&self.track_list[self.track_index], self.volume).await;
+                let _ = audio.play(&self.track_list[self.track_index], self.volume).await;
             }
             if self.paused {
                 audio.pause().await;
@@ -75,7 +75,7 @@ impl App {
         if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
             if self.playing {
-                audio.play(&self.track_list[self.track_index], self.volume).await;
+                let _ = audio.play(&self.track_list[self.track_index], self.volume).await;
             }
             if self.paused {
                 audio.pause().await;
@@ -104,7 +104,7 @@ impl App {
 
     pub async fn play_audio(&mut self, audio: &Audio) -> AppResult<()> {
         if self.sink_empty {
-            audio.play(&self.track_list[self.track_index], self.volume).await;
+            let _ = audio.play(&self.track_list[self.track_index], self.volume).await;
         } else {
             audio.resume().await;
         }
