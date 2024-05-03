@@ -41,44 +41,34 @@ async fn async_main() -> AppResult<()> {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
                 handle_key_events(key_event, &mut app)?;
+                
                 if app.volume != previous_volume {
                     audio.set_volume(app.volume).await;
                     previous_volume = app.volume; // Update previous volume to the new value
                 }
                 // Determine if track has changed
                 if app.track_index != previous_index {
-                    // Track has changed: stop previous and play new
+                    // Stop the current audio
                     audio.stop().await;
-                    let path = app.track_list[app.track_index].to_string();
-                    audio.play(&path).await;
-                    app.is_paused = false; // Reset pause state when track changes
+                    // Play the new track
+                    audio.play(&app.track_list[app.track_index]).await;
                     previous_index = app.track_index; // Update previous index to the new value
-                } else if app.is_paused {
-                    // If paused, no action needed unless pause toggle requested
-                } else if !app.is_playing {
+                } else if app.is_playing && app.is_paused {
+                    // If playing and paused, no action needed unless pause toggle requested
+                    audio.pause().await;
+                } else if !app.is_playing && !app.is_paused {
                     // If not playing and not paused, ensure audio is stopped
                     audio.stop().await;
+                } else if app.is_playing && !app.is_paused && audio.is_sink_empty().await {
+                    audio.play(&app.track_list[app.track_index]).await;
                 } else {
-                    // Otherwise continue playing current track
-                    let path = app.track_list[app.track_index].to_string();
-                    audio.play(&path).await;
+                    audio.resume().await;
                 }
             },
             Event::Mouse(_) => {},
             Event::Resize(_, _) => {}
         }
-         // Manage audio state based on current flags
-        if app.is_playing && !app.is_paused {
-            // Continue playing current track or resume if paused
-            let path = app.track_list[app.track_index].to_string();
-            audio.resume().await; // Resume plays from pause or continues if already playing
-        } else if app.is_paused {
-            // Pause audio
-            audio.pause().await;
-        } else {
-            // Ensure audio is stopped
-            audio.stop().await;
-        }
+
     }
 
     // Exit the user interface.

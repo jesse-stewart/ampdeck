@@ -2,6 +2,8 @@ use rodio::{Decoder, OutputStreamHandle, Sink};
 use std::{fs::File, io::Read, io::Cursor, sync::Arc};
 use tokio::{task, sync::Mutex};
 
+use crate::app::App;
+
 pub struct Audio {
     stream_handle: OutputStreamHandle,
     sink: Arc<Mutex<Option<Sink>>>,
@@ -23,12 +25,12 @@ impl Audio {
     
         let mut sink_guard = sink_clone.lock().await; // Correctly await the lock here
         let sink = sink_guard.get_or_insert_with(|| Sink::try_new(&stream_handle).unwrap());
-    
+        
         // Load file into memory
         let mut file = File::open(path).unwrap();
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).unwrap();
-        
+
         // Decode and play audio
         let cursor = Cursor::new(buffer);
         let source = Decoder::new(cursor).unwrap();
@@ -61,10 +63,21 @@ impl Audio {
     
     pub async fn set_volume(&self, volume: f32) {
         let sink_clone = self.sink.clone();
-        let mut sink_guard = sink_clone.lock().await; // Correctly await the lock here
+        let mut sink_guard = sink_clone.lock().await;
         if let Some(sink) = sink_guard.as_mut() {
             sink.set_volume(volume);
         }
     }
-    
+
+
+    pub async fn is_sink_empty(&self) -> bool {
+        let sink_clone = self.sink.clone();
+        let sink_guard = sink_clone.lock().await;
+        if let Some(sink) = sink_guard.as_ref() {
+            sink.empty()
+        } else {
+            true // Consider the sink as empty if it doesn't exist
+        }
+    }
+
 }

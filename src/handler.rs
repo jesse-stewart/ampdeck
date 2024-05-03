@@ -16,10 +16,10 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
         }
         // Play audio with spacebar
         KeyCode::Char(' ') => {
-            if app.is_playing {
-                app.pause_audio()?;
-            } else {
+            if app.is_paused || !app.is_playing {
                 app.play_audio()?;
+            } else {
+                app.pause_audio()?;
             }
         }
         // Stop audio with `s`

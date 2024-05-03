@@ -12,6 +12,7 @@ pub struct App {
     pub is_paused: bool,
     pub track_list: Vec<&'static str>,
     pub volume: f32,
+    pub auto_next_track: bool,
 }
 
 impl Default for App {
@@ -23,6 +24,7 @@ impl Default for App {
             is_paused: false,
             track_list: vec!["tracks/01 Intro.mp3", "tracks/StarWars3.wav", "tracks/Sample_BeeMoved_96kHz24bit.flac", "tracks/07 - Bitty Mclean - Dedicated To The One I Love.mp3"],
             volume: 0.5,
+            auto_next_track: true,
         }
     }
 }
@@ -60,13 +62,15 @@ impl App {
     pub fn increase_volume(&mut self) {
         const VOLUME_INCREMENT: f32 = 0.01;
         let new_volume = (self.volume + VOLUME_INCREMENT).min(1.0); // Ensure volume doesn't exceed 1.0
-        self.set_volume(new_volume);
+        let rounded_volume = (new_volume * 1000.0).round() / 1000.0; 
+        self.set_volume(rounded_volume);
     }
     
     pub fn decrease_volume(&mut self) {
         const VOLUME_DECREMENT: f32 = 0.01;
         let new_volume = (self.volume - VOLUME_DECREMENT).max(0.0); // Ensure volume doesn't go below 0.0
-        self.set_volume(new_volume);
+        let rounded_volume = (new_volume * 1000.0).round() / 1000.0; 
+        self.set_volume(rounded_volume);
     }
 
     pub fn play_audio(&mut self) -> AppResult<()> {
@@ -76,7 +80,7 @@ impl App {
     }
 
     pub fn pause_audio(&mut self) -> AppResult<()> {
-        self.is_playing = false;
+        self.is_playing = true;
         self.is_paused = true;
         Ok(())
     }
