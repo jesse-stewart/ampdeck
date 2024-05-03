@@ -31,54 +31,40 @@ async fn async_main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
-    let mut previous_index = app.track_index;
-
     // load all the tracks in the the tracks directory
     app.load_tracks()?;
 
     // Start the main loop.
     while app.running {
-        audio.set_volume(app.volume).await;
+        let progress = audio.elapsed_time().await;
+        app.track_progress = progress.as_secs();
+        if app.playing && !app.paused && app.sink_empty && app.track_progress > 1 {
+            audio.stop().await;
+            let next_track = app.track_index + 1;
+            if next_track < app.track_list.len() {
+                app.track_index = next_track;
+                audio.play(&app.track_list[app.track_index], app.volume).await;
+            }
+        }
+        let meta = Meta::new();
+        if let Ok(metadata) = meta.get_audio_metadata(&app.track_list[app.track_index]) {
+            app.track_title = metadata.title.unwrap_or_default();
+            app.track_artist = metadata.artist.unwrap_or_default();
+            app.track_album = metadata.album.unwrap_or_default();
+        }
 
         // Render the user interface.
         tui.draw(&mut app)?;
         // Handle events.
         match tui.events.next()? {
+            Event::Tick => {
+                app.tick();
+            }
             Event::Key(key_event) => {
-                handle_key_events(key_event, &mut app)?;
-                let meta = Meta::new();
-                if let Ok(metadata) = meta.get_audio_metadata(&app.track_list[app.track_index]) {
-                    app.track_title = metadata.title.unwrap_or_default();
-                    app.track_artist = metadata.artist.unwrap_or_default();
-                    app.track_album = metadata.album.unwrap_or_default();
-                }
-        
-                // Update track metadata if the track index changes
-                if app.track_index != previous_index {
-                    // Stop and play the new track if we were already playing
-                    if app.playing {
-                        audio.stop().await;
-                        audio.play(&app.track_list[app.track_index]).await;
-                    }
-                    previous_index = app.track_index; // Update to the new track index
-                }
-        
-                // Handle play/pause logic
-                if app.playing {
-                    if app.paused {
-                        audio.pause().await;
-                    } else if audio.is_sink_empty().await {
-                        audio.play(&app.track_list[app.track_index]).await;
-                    } else {
-                        audio.resume().await;
-                    }
-                } else {
-                    audio.stop().await;
-                }
+                handle_key_events(key_event, &mut app, &audio).await?;
             },
             Event::Mouse(_) => {},
             Event::Resize(_, _) => {},
-            _ => {} // Handle other events
         }
         
         // Update sink_empty state after handling events

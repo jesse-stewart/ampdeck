@@ -1,6 +1,6 @@
 use std::error;
-
 use walkdir::WalkDir;
+use crate::audio::Audio;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -57,49 +57,60 @@ impl App {
         self.running = false;
     }
 
-    pub fn increment_track_index(&mut self) {
+    pub async fn increment_track(&mut self, audio: &Audio) {
+        audio.stop().await;
         if self.track_index < self.track_list.len() - 1 {
             self.track_index += 1;
+            audio.play(&self.track_list[self.track_index], self.volume).await;
         }
     }
 
-    pub fn decrement_track_index(&mut self) {
+    pub async fn decrement_track(&mut self, audio: &Audio) {
+        audio.stop().await;
         if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
+            audio.play(&self.track_list[self.track_index], self.volume).await;
         }
     }
 
-    pub fn set_volume(&mut self, volume: f32) {
+    pub async fn set_volume(&mut self, volume: f32, audio: &Audio) {
         self.volume = volume;
+        audio.set_volume(volume).await;
     }
 
-    pub fn increase_volume(&mut self) {
+    pub async fn increase_volume(&mut self, audio: &Audio) {
         const VOLUME_INCREMENT: f32 = 0.01;
         let new_volume = (self.volume + VOLUME_INCREMENT).min(1.0); // Ensure volume doesn't exceed 1.0
         let rounded_volume = (new_volume * 1000.0).round() / 1000.0; 
-        self.set_volume(rounded_volume);
+        self.set_volume(rounded_volume, &audio).await;
     }
     
-    pub fn decrease_volume(&mut self) {
+    pub async fn decrease_volume(&mut self, audio: &Audio) {
         const VOLUME_DECREMENT: f32 = 0.01;
         let new_volume = (self.volume - VOLUME_DECREMENT).max(0.0); // Ensure volume doesn't go below 0.0
         let rounded_volume = (new_volume * 1000.0).round() / 1000.0; 
-        self.set_volume(rounded_volume);
+        self.set_volume(rounded_volume, &audio).await;
     }
 
-    pub fn play_audio(&mut self) -> AppResult<()> {
+    pub async fn play_audio(&mut self, audio: &Audio) -> AppResult<()> {
+        if self.sink_empty {
+            audio.play(&self.track_list[self.track_index], self.volume).await;
+        } else {
+            audio.resume().await;
+        }
         self.playing = true;
         self.paused = false;
         Ok(())
     }
 
-    pub fn pause_audio(&mut self) -> AppResult<()> {
-        self.playing = true;
+    pub async fn pause_audio(&mut self, audio: &Audio) -> AppResult<()> {
+        audio.pause().await;
         self.paused = true;
         Ok(())
     }
 
-    pub fn stop_audio(&mut self) -> AppResult<()> {
+    pub async fn stop_audio(&mut self, audio: &Audio) -> AppResult<()> {
+        audio.stop().await;
         self.playing = false;
         self.paused = false;
         Ok(())

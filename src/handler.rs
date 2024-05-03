@@ -1,8 +1,8 @@
-use crate::app::{App, AppResult};
+use crate::{app::{App, AppResult}, audio::Audio};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 /// Handles the key events and updates the state of [`App`].
-pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
+pub async fn handle_key_events(key_event: KeyEvent, app: &mut App, audio: &Audio) -> AppResult<()> {
     match key_event.code {
         // Exit application on `ESC` or `q`
         KeyCode::Esc | KeyCode::Char('q') => {
@@ -17,28 +17,28 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
         // Play audio with spacebar
         KeyCode::Char(' ') => {
             if app.paused || !app.playing {
-                app.play_audio()?;
+                app.play_audio(audio).await?;
             } else {
-                app.pause_audio()?;
+                app.pause_audio(audio).await?;
             }
         }
         // Stop audio with `s`
         KeyCode::Char('s') => {
-            app.stop_audio()?;
+            app.stop_audio(audio).await?;
         }
         // track_index handlers
         KeyCode::Right => {
-            app.increment_track_index();
+            app.increment_track(audio).await;
         }
         KeyCode::Left => {
-            app.decrement_track_index();
+            app.decrement_track(audio).await;
         }
         // Volume handlers
         KeyCode::Up => {
-            app.increase_volume();
+            app.increase_volume(audio).await;
         }
         KeyCode::Down => {
-            app.decrease_volume();
+            app.decrease_volume(audio).await;
         }
         // print the key event for debugging
         _ => {
