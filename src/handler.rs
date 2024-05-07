@@ -26,6 +26,9 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App, audio: &Audio
         KeyCode::Char('s') => {
             app.stop_audio(audio).await?;
         }
+        KeyCode::Char('l') => {
+            app.disable_loop_playlist().await;
+        }
         // track_index handlers
         KeyCode::Right => {
             app.increment_track(audio).await;

@@ -16,9 +16,10 @@ pub struct App {
     pub paused: bool,
     pub track_list: Vec<String>,
     pub volume: f32,
-    pub auto_next_track: bool,
+    pub loop_playlist: bool,
     pub track_duration: u64,
     pub track_progress: u64,
+    pub track_file: String,
     pub track_title: String,
     pub track_artist: String,
     pub track_album: String,
@@ -34,9 +35,10 @@ impl Default for App {
             paused: false,
             track_list: vec![],
             volume: 0.05,
-            auto_next_track: true,
+            loop_playlist: true,
             track_duration: 0,
             track_progress: 0,
+            track_file: String::new(),
             track_title: String::new(),
             track_artist: String::new(),
             track_album: String::new(),
@@ -62,29 +64,33 @@ impl App {
         audio.stop().await;
         if self.track_index < self.track_list.len() - 1 {
             self.track_index += 1;
-            if self.playing {
-                if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
-                    Box::pin(self.increment_track(audio)).await;
-                }
+        } else if self.loop_playlist {
+            self.track_index = 0;
+        }
+        if self.playing {
+            if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
+                Box::pin(self.increment_track(audio)).await;
             }
-            if self.paused {
-                audio.pause().await;
-            }
+        }
+        if self.paused {
+            audio.pause().await;
         }
     }
 
     pub async fn decrement_track(&mut self, audio: &Audio) {
         audio.stop().await;
-        if let Some(res) = self.track_index.checked_sub(1) {
+        if self.loop_playlist && self.track_index == 0 {
+            self.track_index = self.track_list.len() - 1;
+        } else if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
-            if self.playing {
-                if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
-                    Box::pin(self.decrement_track(audio)).await;
-                }
+        }
+        if self.playing {
+            if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
+                Box::pin(self.decrement_track(audio)).await;
             }
-            if self.paused {
-                audio.pause().await;
-            }
+        }
+        if self.paused {
+            audio.pause().await;
         }
     }
 
@@ -131,6 +137,25 @@ impl App {
         self.playing = false;
         self.paused = false;
         Ok(())
+    }
+
+    pub async fn disable_loop_playlist(&mut self) {
+        self.loop_playlist = !self.loop_playlist;
+    }
+    
+    pub async fn check_and_advance_track(&mut self, audio: &Audio) {
+        if self.playing && !self.paused && self.sink_empty && self.track_progress > 1 {
+            audio.stop().await;
+            let next_track = if self.loop_playlist && self.track_index == self.track_list.len() - 1 {
+                0
+            } else {
+                self.track_index + 1
+            };
+            self.track_index = next_track;
+            if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
+                self.increment_track(audio).await;
+            }
+        }
     }
 
     pub fn load_tracks(&mut self) -> Result<(), io::Error> {

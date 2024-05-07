@@ -42,19 +42,13 @@ async fn async_main() -> AppResult<()> {
         
         let meta = Meta::new();
         if let Ok(metadata) = meta.get_audio_metadata(&app.track_list[app.track_index]) {
+            app.track_file = metadata.file.unwrap_or_default();
             app.track_title = metadata.title.unwrap_or_default();
             app.track_artist = metadata.artist.unwrap_or_default();
             app.track_album = metadata.album.unwrap_or_default();
         }
 
-        if app.playing && !app.paused && app.sink_empty && app.track_progress > 1 {
-            audio.stop().await;
-            let next_track = app.track_index + 1;
-            if next_track < app.track_list.len() {
-                app.track_index = next_track;
-                let _ = audio.play(&app.track_list[app.track_index], app.volume).await;
-            }
-        }
+        app.check_and_advance_track(&audio).await;
 
         // Render the user interface.
         tui.draw(&mut app)?;

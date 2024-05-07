@@ -10,6 +10,7 @@ enum AudioFileType {
 }
 
 pub struct AudioMetadata {
+    pub file: Option<String>,
     pub title: Option<String>,
     pub artist: Option<String>,
     pub album: Option<String>,
@@ -34,32 +35,34 @@ impl Meta {
     
     pub fn get_audio_metadata(&self, path: &str) -> io::Result<AudioMetadata> {
         let file_type = Self::detect_file_type(path)?;
+        let filename = path.split('/').last().unwrap().to_string();
+        let short_filename = filename.clone().split('.').next().map(|s| s.to_string()).unwrap_or_else(|| String::new());
         match file_type {
             AudioFileType::FLAC => {
-                let filename = path.split('/').last().unwrap().to_string();
                 let tag = Tag::read_from_path(path).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                let title = tag.get_vorbis("TITLE").and_then(|mut iter| iter.next()).map(|s| s.to_string());
+                let title = title.unwrap_or_else(|| short_filename.clone());
                 Ok(AudioMetadata {
-                    title: Some(filename),
-                    // title: tag.get_vorbis("TITLE").and_then(|mut iter| iter.next()).map(|s| s.to_string()),
+                    file: Some(filename),
+                    title: Some(title),
                     artist: tag.get_vorbis("ARTIST").and_then(|mut iter| iter.next()).map(|s| s.to_string()),
                     album: tag.get_vorbis("ALBUM").and_then(|mut iter| iter.next()).map(|s| s.to_string()),
                 })
             },
             AudioFileType::MP3 => {
-                let filename = path.split('/').last().unwrap().to_string();
                 let metadata = mp3_metadata::read_from_file(path).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+                let title = metadata.tag.as_ref().and_then(|tag| Some(tag.title.clone())).unwrap_or_else(|| short_filename.clone());
                 Ok(AudioMetadata {
-                    title: Some(filename),
-                    // title: metadata.tag.as_ref().and_then(|tag| Some(tag.title.clone())),
+                    file: Some(filename),
+                    title: Some(title),
                     artist: metadata.tag.as_ref().and_then(|tag| Some(tag.artist.clone())),
                     album: metadata.tag.as_ref().and_then(|tag| Some(tag.album.clone())),
                 })
             },
             AudioFileType::WAV => {
-                let filename = path.split('/').last().unwrap().to_string();
                 Ok(AudioMetadata {
-                    title: Some(filename),
-                    // title: Some(filename.split('.').next().map(|s| s.to_string()).unwrap_or_else(|| String::new())),
+                    file: Some(filename),
+                    title: Some(short_filename),
                     artist: Some(String::new()),
                     album: Some(String::new()),
                 })
