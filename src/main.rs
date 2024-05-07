@@ -1,3 +1,4 @@
+use ampdeck::logger::setup_logging;
 use tokio::runtime::Runtime;
 use rodio::OutputStream;
 use ampdeck::app::{App, AppResult};
@@ -11,13 +12,13 @@ use ratatui::Terminal;
 use ampdeck::meta::Meta;
 
 fn main() -> AppResult<()> {
+    setup_logging().unwrap();
     let rt = Runtime::new()?;
     rt.block_on(async_main())
 }
 
-
 async fn async_main() -> AppResult<()> {
-    // Audio setup
+
     let (_stream, stream_handle) = OutputStream::try_default()?;
     let audio = Audio::new(&stream_handle);
 
@@ -38,6 +39,14 @@ async fn async_main() -> AppResult<()> {
     while app.running {
         let progress = audio.elapsed_time().await;
         app.track_progress = progress.as_secs();
+        
+        let meta = Meta::new();
+        if let Ok(metadata) = meta.get_audio_metadata(&app.track_list[app.track_index]) {
+            app.track_title = metadata.title.unwrap_or_default();
+            app.track_artist = metadata.artist.unwrap_or_default();
+            app.track_album = metadata.album.unwrap_or_default();
+        }
+
         if app.playing && !app.paused && app.sink_empty && app.track_progress > 1 {
             audio.stop().await;
             let next_track = app.track_index + 1;
@@ -45,12 +54,6 @@ async fn async_main() -> AppResult<()> {
                 app.track_index = next_track;
                 let _ = audio.play(&app.track_list[app.track_index], app.volume).await;
             }
-        }
-        let meta = Meta::new();
-        if let Ok(metadata) = meta.get_audio_metadata(&app.track_list[app.track_index]) {
-            app.track_title = metadata.title.unwrap_or_default();
-            app.track_artist = metadata.artist.unwrap_or_default();
-            app.track_album = metadata.album.unwrap_or_default();
         }
 
         // Render the user interface.

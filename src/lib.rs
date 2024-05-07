@@ -7,6 +7,9 @@ pub mod audio;
 /// Terminal events handler.
 pub mod event;
 
+/// Logger.
+pub mod logger;
+
 /// Metadata handler.
 pub mod meta;
 

@@ -1,3 +1,4 @@
+use std::io::{self};
 use std::error;
 use walkdir::WalkDir;
 use crate::audio::Audio;
@@ -62,7 +63,9 @@ impl App {
         if self.track_index < self.track_list.len() - 1 {
             self.track_index += 1;
             if self.playing {
-                let _ = audio.play(&self.track_list[self.track_index], self.volume).await;
+                if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
+                    Box::pin(self.increment_track(audio)).await;
+                }
             }
             if self.paused {
                 audio.pause().await;
@@ -75,7 +78,9 @@ impl App {
         if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
             if self.playing {
-                let _ = audio.play(&self.track_list[self.track_index], self.volume).await;
+                if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
+                    Box::pin(self.decrement_track(audio)).await;
+                }
             }
             if self.paused {
                 audio.pause().await;
@@ -104,7 +109,9 @@ impl App {
 
     pub async fn play_audio(&mut self, audio: &Audio) -> AppResult<()> {
         if self.sink_empty {
-            let _ = audio.play(&self.track_list[self.track_index], self.volume).await;
+            if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
+                self.increment_track(audio).await;
+            }
         } else {
             audio.resume().await;
         }
@@ -126,24 +133,30 @@ impl App {
         Ok(())
     }
 
-    pub fn load_tracks(&mut self) -> AppResult<()> {
-        let tracks = WalkDir::new("tracks")
+    pub fn load_tracks(&mut self) -> Result<(), io::Error> {
+        let mut tracks = WalkDir::new("tracks")
+            .sort_by(|a, b| a.file_name().cmp(b.file_name())) // Sort entries alphabetically by file name
             .into_iter()
-            .filter_map(|entry| entry.ok())
+            .filter_map(|entry| entry.ok()) // Handle WalkDir errors here
             .filter_map(|e| {
                 let path = e.path();
-                if path.is_file() && 
-                    (path.extension().map_or(false, |ext| 
-                        ext.eq("mp3") || ext.eq("wav") || ext.eq("flac"))) {
+                if path.is_file() &&
+                    path.file_name()
+                        .map(|name| !name.to_string_lossy().starts_with('.'))
+                        .unwrap_or(false) && // Check that the file does not start with '.'
+                    path.extension()
+                        .map_or(false, |ext| ext.eq_ignore_ascii_case("mp3") || ext.eq_ignore_ascii_case("wav") || ext.eq_ignore_ascii_case("flac")) {
                     Some(path.to_string_lossy().into_owned())
                 } else {
                     None
                 }
             })
             .collect::<Vec<String>>();
+        tracks.sort(); // Sort the track list alphabetically
         self.track_list = tracks;
         Ok(())
     }
+    
 
     pub fn set_track_duration(&mut self, duration: u64) {
         self.track_duration = duration;

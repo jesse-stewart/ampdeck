@@ -1,6 +1,7 @@
 use std::io::{self, Read};
 use std::fs::File;
 use std::io::Cursor;
+use log::{error, info};
 use rodio::{Decoder, Sink, OutputStreamHandle};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -28,34 +29,44 @@ impl Audio {
         let stream_handle = self.stream_handle.clone();
         let sink_clone = self.sink.clone();
         let start_time_clone = self.start_time.clone();
-
+    
         let mut sink_guard = sink_clone.lock().await;
         *sink_guard = None; // Reset sink
         let sink = sink_guard.get_or_insert_with(|| Sink::try_new(&stream_handle).expect("Failed to create audio sink"));
         sink.set_volume(volume);
-
+    
         let file = File::open(&path);
         match file {
             Ok(mut file) => {
                 let mut buffer = Vec::new();
                 if file.read_to_end(&mut buffer).is_err() {
+                    error!("Failed to read audio file: {}", path);
                     return Err(io::Error::new(io::ErrorKind::Other, "Failed to read audio file"));
                 }
-
+    
                 let cursor = Cursor::new(buffer);
                 match Decoder::new(cursor) {
                     Ok(source) => {
                         sink.append(source);
                         *start_time_clone.lock().await = Some(Instant::now()); // Set the start time when playback begins
                         *self.accumulated_duration.lock().await = Duration::from_secs(0); // Reset accumulated time on new play
+                        info!("Started playing: {}", path);
                         Ok(())
                     },
-                    Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "Failed to decode audio"))
+                    Err(_) => {
+                        error!("Failed to decode audio file: {}", path);
+                        return Err(io::Error::new(io::ErrorKind::InvalidData, "Failed to decode audio"));
+                    }
                 }
             },
-            Err(e) => Err(e),
+            Err(e) => {
+                error!("Error opening file: {} with error: {:?}", path, e);
+                Err(e)
+            }
         }
     }
+    
+    
 
     pub async fn pause(&self) {
         let sink_clone = self.sink.clone();

@@ -36,17 +36,21 @@ impl Meta {
         let file_type = Self::detect_file_type(path)?;
         match file_type {
             AudioFileType::FLAC => {
+                let filename = path.split('/').last().unwrap().to_string();
                 let tag = Tag::read_from_path(path).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
                 Ok(AudioMetadata {
-                    title: tag.get_vorbis("TITLE").and_then(|mut iter| iter.next()).map(|s| s.to_string()),
+                    title: Some(filename),
+                    // title: tag.get_vorbis("TITLE").and_then(|mut iter| iter.next()).map(|s| s.to_string()),
                     artist: tag.get_vorbis("ARTIST").and_then(|mut iter| iter.next()).map(|s| s.to_string()),
                     album: tag.get_vorbis("ALBUM").and_then(|mut iter| iter.next()).map(|s| s.to_string()),
                 })
             },
             AudioFileType::MP3 => {
+                let filename = path.split('/').last().unwrap().to_string();
                 let metadata = mp3_metadata::read_from_file(path).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
                 Ok(AudioMetadata {
-                    title: metadata.tag.as_ref().and_then(|tag| Some(tag.title.clone())),
+                    title: Some(filename),
+                    // title: metadata.tag.as_ref().and_then(|tag| Some(tag.title.clone())),
                     artist: metadata.tag.as_ref().and_then(|tag| Some(tag.artist.clone())),
                     album: metadata.tag.as_ref().and_then(|tag| Some(tag.album.clone())),
                 })
@@ -54,7 +58,8 @@ impl Meta {
             AudioFileType::WAV => {
                 let filename = path.split('/').last().unwrap().to_string();
                 Ok(AudioMetadata {
-                    title: Some(filename.split('.').next().map(|s| s.to_string()).unwrap_or_else(|| String::new())),
+                    title: Some(filename),
+                    // title: Some(filename.split('.').next().map(|s| s.to_string()).unwrap_or_else(|| String::new())),
                     artist: Some(String::new()),
                     album: Some(String::new()),
                 })
