@@ -10,14 +10,29 @@ use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use ampdeck::meta::Meta;
+use serde::Deserialize;
+use config::{Config as Configuration, File, FileFormat, ConfigError};
+
+#[derive(Debug, Deserialize)]
+struct Config {
+    music_directory: String,
+}
+
+fn load_config() -> Result<Config, ConfigError> {
+    Configuration::builder()
+        .add_source(File::new("./Settings.toml", FileFormat::Toml))
+        .build()?
+        .try_deserialize::<Config>()
+}
 
 fn main() -> AppResult<()> {
     setup_logging().unwrap();
+    let cfg = load_config().unwrap();
     let rt = Runtime::new()?;
-    rt.block_on(async_main())
+    rt.block_on(async_main(cfg))
 }
 
-async fn async_main() -> AppResult<()> {
+async fn async_main(cfg: Config) -> AppResult<()> {
 
     let (_stream, stream_handle) = OutputStream::try_default()?;
     let audio = Audio::new(&stream_handle);
@@ -33,7 +48,7 @@ async fn async_main() -> AppResult<()> {
     tui.init()?;
 
     // load all the tracks in the the tracks directory
-    app.load_tracks()?;
+    app.load_tracks(cfg.music_directory.as_str())?;
 
     // Start the main loop.
     while app.running {

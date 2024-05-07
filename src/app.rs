@@ -158,8 +158,8 @@ impl App {
         }
     }
 
-    pub fn load_tracks(&mut self) -> Result<(), io::Error> {
-        let mut tracks = WalkDir::new("tracks")
+    pub fn load_tracks(&mut self, folder_path: &str) -> Result<(), io::Error> {
+        let mut tracks = WalkDir::new(folder_path)
             .sort_by(|a, b| a.file_name().cmp(b.file_name())) // Sort entries alphabetically by file name
             .into_iter()
             .filter_map(|entry| entry.ok()) // Handle WalkDir errors here
