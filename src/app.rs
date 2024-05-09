@@ -135,6 +135,28 @@ impl App {
         }
     }
 
+    pub fn get_next_track(&mut self) -> AppResult<String> {
+        let next_track_index = if self.loop_playlist && self.track_index == self.track_list.len() - 1 {
+            0
+        } else {
+            self.track_index + 1
+        };
+        
+        let next_track_path = &self.track_list[next_track_index];
+        let meta = Meta::new();
+    
+        // Use spawn_blocking to perform the heavy I/O task in a separate thread
+        let result = meta.get_audio_metadata(next_track_path);  // handle errors appropriately
+    
+        if let Ok(metadata) = result {
+            self.track_title = metadata.title.unwrap_or_default();
+            self.track_artist = metadata.artist.unwrap_or_default();
+            self.track_album = metadata.album.unwrap_or_default();
+        }
+        
+        Ok(self.track_title.clone())
+    }
+
     pub async fn play_audio(&mut self, audio: &Audio) -> AppResult<()> {
         self.update_meta().await;
         if self.sink_empty {

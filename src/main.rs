@@ -10,7 +10,6 @@ use ampdeck::tui::Tui;
 use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use ampdeck::meta::Meta;
 use serde::Deserialize;
 use config::{Config as Configuration, File, FileFormat, ConfigError};
 
@@ -62,7 +61,7 @@ async fn async_main(cfg: Config) -> AppResult<()> {
 
     // load all the tracks in the the tracks directory
     app.load_tracks(cfg.music_directory.as_str())?;
-    app.update_meta();
+    app.update_meta().await;
 
     // Start the main loop.
     while app.running {
