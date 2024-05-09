@@ -1,7 +1,7 @@
 use ratatui::{
-    layout::Alignment,
+    layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
-    widgets::{Block, BorderType, Paragraph},
+    widgets::{Block, BorderType, Borders, Padding, Paragraph},
     Frame,
 };
 
@@ -9,52 +9,192 @@ use crate::app::App;
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {
-    // This is where you add new widgets.
-    // See the following resources:
-    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
-    // - https://github.com/ratatui-org/ratatui/tree/master/examples
-    frame.render_widget(
-        Paragraph::new(format!(
-            "Press `Esc`, `Ctrl-C` or `q` to stop running.\n\
-                Switch track with `Left` and `Right` arrow keys.\n\
-                Play/Pause with `Spacebar`. Adjust volume with 'Up' and 'Down' arrow keys.\n\
-                Stop with `s`. Loop playlist with 'l'.\n\
-                \n\
-                title: {}\n\
-                artist: {}\n\
-                album: {}\n\
-                track: {}\n\
-                of: {}\n\n\
-                Playing: {}\n\
-                Paused: {}\n\
-                Volume: {}\n\
-                loop_playlist: {}\n\
-                track_duration: {}\n\
-                track_progress: {}\n\
-                file: {}\n\
-                sink_empty: {}",
-                app.track_title,
-                app.track_artist,
-                app.track_album,
-                app.track_index + 1,
-                app.track_list.len(),
-                app.playing,
-                app.paused,
-                app.volume,
-                app.loop_playlist,
-                app.track_duration,
-                app.track_progress,
-                app.track_file,
-                app.sink_empty
-        ))
+    // Define the layout constraints for each section
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1) // optional: adds a margin around the whole layout
+        .constraints([
+            Constraint::Length(5), // Height for the title bar
+            Constraint::Min(0),    // Remaining space for the main content
+            Constraint::Length(3), // Height for the status bar
+        ])
+        .split(frame.size());
+
+    // Split the main content area into 2 columns
+    let main_content_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chunks[1]);
+
+    // Split the stutus area into 5 columns
+    let volume_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Max(3), Constraint::Min(1), Constraint::Max(3)])
+        .split(main_content_chunks[1]);
+
+    // Split the stutus area into 5 columns
+    let status_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+        ])
+        .split(chunks[2]);
+
+    // Create the title bar widget
+    let title_bar = Paragraph::new(format!(
+        "{}\n{}\n{}\n",
+        app.track_title, app.track_artist, app.track_album
+    ))
+    .block(
+        Block::default()
+            .title_alignment(Alignment::Center)
+            .border_type(BorderType::Rounded)
+            .style(Style::default().fg(Color::White).bg(Color::Blue))
+            .padding(Padding::new(2, 2, 1, 1)),
+    );
+
+    // Create the main content widgets for each column
+    let main_content_1 = Paragraph::new(format!(
+        "Track: {}\nIndex: {}/{}\nProgress: {}s",
+        app.track_file,
+        app.track_index,
+        app.track_list.len(),
+        app.track_progress,
+    ))
+    .block(
+        Block::default()
+            .border_type(BorderType::Rounded)
+            .borders(Borders::ALL)
+            .padding(Padding::new(1, 1, 0, 0)),
+    );
+
+    let volume_content_1 = Paragraph::new("[↑] Volume Up")
         .block(
-            Block::bordered()
-                .title("Ampdeck")
-                .title_alignment(Alignment::Center)
-                .border_type(BorderType::Rounded),
+            Block::default()
+                .border_type(BorderType::Double)
+                .borders(Borders::ALL),
         )
-        .style(Style::default().fg(Color::Cyan).bg(Color::Black))
-        .centered(),
-        frame.size(),
-    )
+        .style(if app.volume == 1.00 {
+            Style::default().fg(Color::Red)
+        } else if app.volume == 0.00 {
+            Style::default().fg(Color::DarkGray)
+        } else {
+            Style::default().fg(Color::Blue)
+        })
+        .alignment(Alignment::Center);
+    fn volume_string(volume: f32) -> String {
+        // return a string of volume * 100 and %. If 0, return "Muted".
+        if volume == 0.00 {
+            return "Muted".to_string();
+        }
+        format!("{:.0}%", volume * 100.0)
+    }
+
+    let volume_content_2 = Paragraph::new(format!("Volume: {}", volume_string(app.volume)))
+        .block(
+            Block::default()
+                .border_type(BorderType::Rounded)
+                .borders(Borders::ALL),
+        )
+        .style(if app.volume == 1.00 {
+            Style::default().fg(Color::Red)
+        } else if app.volume == 0.00 {
+            Style::default().fg(Color::DarkGray)
+        } else {
+            Style::default().fg(Color::Blue)
+        })
+        .alignment(Alignment::Center);
+
+    let volume_content_3 = Paragraph::new("[↓] Volume Down")
+        .block(
+            Block::default()
+                .border_type(BorderType::Double)
+                .borders(Borders::ALL),
+        )
+        .style(if app.volume == 1.00 {
+            Style::default().fg(Color::Red)
+        } else if app.volume == 0.00 {
+            Style::default().fg(Color::DarkGray)
+        } else {
+            Style::default().fg(Color::Blue)
+        })
+        .alignment(Alignment::Center);
+
+    let status_content_1 = Paragraph::new("[←] Prev")
+        .block(
+            Block::default()
+                .border_type(BorderType::Double)
+                .borders(Borders::ALL)
+                .padding(Padding::new(1, 1, 0, 0)),
+        )
+        .alignment(Alignment::Center);
+
+    let status_content_2 = Paragraph::new("[Space] Play")
+        .block(
+            Block::default()
+                .border_type(BorderType::Double)
+                .borders(Borders::ALL)
+                .padding(Padding::new(1, 1, 0, 0)),
+        )
+        .style(if app.playing && !app.paused {
+            Style::default().fg(Color::Green)
+        } else if app.playing && app.paused {
+            Style::default().fg(Color::Red)
+        } else {
+            Style::default()
+        })
+        .alignment(Alignment::Center);
+
+    let status_content_3 = Paragraph::new("[S] Stop")
+        .block(
+            Block::default()
+                .border_type(BorderType::Double)
+                .borders(Borders::ALL)
+                .padding(Padding::new(1, 1, 0, 0)),
+        )
+        .style(if !app.playing && !app.paused {
+            Style::default().fg(Color::Red)
+        } else {
+            Style::default()
+        })
+        .alignment(Alignment::Center);
+
+    let status_content_4 = Paragraph::new("[→] Next")
+        .block(
+            Block::default()
+                .border_type(BorderType::Double)
+                .borders(Borders::ALL)
+                .padding(Padding::new(1, 1, 0, 0)),
+        )
+        .alignment(Alignment::Center);
+
+    let status_content_5 = Paragraph::new("[L] Loop")
+        .block(
+            Block::default()
+                .border_type(BorderType::Double)
+                .borders(Borders::ALL)
+                .padding(Padding::new(1, 1, 0, 0)),
+        )
+        .style(if app.loop_playlist {
+            Style::default().fg(Color::Blue)
+        } else {
+            Style::default()
+        })
+        .alignment(Alignment::Center);
+
+    // Render each widget in its respective area
+    frame.render_widget(title_bar, chunks[0]);
+    frame.render_widget(main_content_1, main_content_chunks[0]);
+    frame.render_widget(volume_content_1, volume_chunks[0]);
+    frame.render_widget(volume_content_2, volume_chunks[1]);
+    frame.render_widget(volume_content_3, volume_chunks[2]);
+    frame.render_widget(status_content_1, status_chunks[0]);
+    frame.render_widget(status_content_2, status_chunks[1]);
+    frame.render_widget(status_content_3, status_chunks[2]);
+    frame.render_widget(status_content_4, status_chunks[3]);
+    frame.render_widget(status_content_5, status_chunks[4]);
 }

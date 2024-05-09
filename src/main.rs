@@ -10,7 +10,6 @@ use ampdeck::tui::Tui;
 use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use ampdeck::meta::Meta;
 use serde::Deserialize;
 use config::{Config as Configuration, File, FileFormat, ConfigError};
 
@@ -56,27 +55,18 @@ async fn async_main(cfg: Config) -> AppResult<()> {
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
+    let events = EventHandler::new(1000);
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
     // load all the tracks in the the tracks directory
     app.load_tracks(cfg.music_directory.as_str())?;
+    app.update_meta().await;
 
     // Start the main loop.
     while app.running {
         let progress = audio.elapsed_time().await;
         app.track_progress = progress.as_secs();
-        
-        let meta = Meta::new();
-        if let Ok(metadata) = meta.get_audio_metadata(&app.track_list[app.track_index]) {
-            app.track_file = metadata.file.unwrap_or_default();
-            app.track_title = metadata.title.unwrap_or_default();
-            app.track_artist = metadata.artist.unwrap_or_default();
-            app.track_album = metadata.album.unwrap_or_default();
-        }
-
-        app.check_and_advance_track(&audio).await;
 
         // Render the user interface.
         tui.draw(&mut app)?;

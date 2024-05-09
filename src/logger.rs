@@ -7,7 +7,9 @@ use std::os::unix::io::AsRawFd;
 use libc::{dup2, STDOUT_FILENO};
 
 pub fn setup_logging() -> Result<(), log::SetLoggerError> {
-    let log_file = File::create("log.log").unwrap();
+    // make sure ./logs directory exists
+    std::fs::create_dir_all("./logs").unwrap();
+    let log_file = File::create("./logs/log.log").unwrap();
     CombinedLogger::init(vec![
         WriteLogger::new(log::LevelFilter::Info, Config::default(), log_file),
     ])
@@ -28,7 +30,8 @@ impl Write for LoggerWriter {
 }
 
 pub fn redirect_stdout_stderr() {
-    let log_file = OpenOptions::new().create(true).append(true).open("log_sys.log").unwrap();
+    std::fs::create_dir_all("./logs").unwrap();
+    let log_file = OpenOptions::new().create(true).append(true).open("./logs/log_sys.log").unwrap();
     let fd = log_file.as_raw_fd();
 
     unsafe {

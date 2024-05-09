@@ -2,7 +2,9 @@ use std::io::{self};
 use std::error;
 use walkdir::WalkDir;
 use crate::audio::Audio;
+use crate::meta::Meta;
 use log::{info, error};
+use tokio::task;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -68,6 +70,7 @@ impl App {
         } else if self.loop_playlist {
             self.track_index = 0;
         }
+        self.update_meta().await;
         if self.playing {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 Box::pin(self.increment_track(audio)).await;
@@ -85,6 +88,7 @@ impl App {
         } else if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
         }
+        self.update_meta().await;
         if self.playing {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 Box::pin(self.decrement_track(audio)).await;
@@ -114,7 +118,47 @@ impl App {
         self.set_volume(rounded_volume, &audio).await;
     }
 
+    pub async fn update_meta(&mut self) {
+        let path = self.track_list[self.track_index].clone();
+        let meta = Meta::new();
+    
+        // Use spawn_blocking to perform the heavy I/O task in a separate thread
+        let result = task::spawn_blocking(move || {
+            meta.get_audio_metadata(&path)
+        }).await.unwrap();  // handle errors appropriately
+    
+        if let Ok(metadata) = result {
+            self.track_file = metadata.file.unwrap_or_default();
+            self.track_title = metadata.title.unwrap_or_default();
+            self.track_artist = metadata.artist.unwrap_or_default();
+            self.track_album = metadata.album.unwrap_or_default();
+        }
+    }
+
+    pub fn get_next_track(&mut self) -> AppResult<String> {
+        let next_track_index = if self.loop_playlist && self.track_index == self.track_list.len() - 1 {
+            0
+        } else {
+            self.track_index + 1
+        };
+        
+        let next_track_path = &self.track_list[next_track_index];
+        let meta = Meta::new();
+    
+        // Use spawn_blocking to perform the heavy I/O task in a separate thread
+        let result = meta.get_audio_metadata(next_track_path);  // handle errors appropriately
+    
+        if let Ok(metadata) = result {
+            self.track_title = metadata.title.unwrap_or_default();
+            self.track_artist = metadata.artist.unwrap_or_default();
+            self.track_album = metadata.album.unwrap_or_default();
+        }
+        
+        Ok(self.track_title.clone())
+    }
+
     pub async fn play_audio(&mut self, audio: &Audio) -> AppResult<()> {
+        self.update_meta().await;
         if self.sink_empty {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 self.increment_track(audio).await;

@@ -2,7 +2,6 @@ use std::io::{self};
 use std::path::Path;
 use metaflac::Tag;
 
-
 enum AudioFileType {
     FLAC,
     WAV,

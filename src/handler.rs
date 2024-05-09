@@ -45,7 +45,6 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App, audio: &Audio
         }
         // print the key event for debugging
         _ => {
-            println!("{:?}", key_event);
         }
         
     }
