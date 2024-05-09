@@ -2,7 +2,7 @@ use std::io::{self};
 use std::error;
 use walkdir::WalkDir;
 use crate::audio::Audio;
-use log::{info, warn, error};
+use log::{info, error};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
