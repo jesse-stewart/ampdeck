@@ -62,7 +62,7 @@ async fn async_main(cfg: Config) -> AppResult<()> {
 
     // load all the tracks in the the tracks directory
     app.load_tracks(cfg.music_directory.as_str())?;
-    app.update_meta().await;
+    app.update_meta();
 
     // Start the main loop.
     while app.running {

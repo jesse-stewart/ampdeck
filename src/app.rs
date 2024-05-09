@@ -4,6 +4,7 @@ use walkdir::WalkDir;
 use crate::audio::Audio;
 use crate::meta::Meta;
 use log::{info, error};
+use tokio::task;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -118,8 +119,15 @@ impl App {
     }
 
     pub async fn update_meta(&mut self) {
+        let path = self.track_list[self.track_index].clone();
         let meta = Meta::new();
-        if let Ok(metadata) = meta.get_audio_metadata(&self.track_list[self.track_index]) {
+    
+        // Use spawn_blocking to perform the heavy I/O task in a separate thread
+        let result = task::spawn_blocking(move || {
+            meta.get_audio_metadata(&path)
+        }).await.unwrap();  // handle errors appropriately
+    
+        if let Ok(metadata) = result {
             self.track_file = metadata.file.unwrap_or_default();
             self.track_title = metadata.title.unwrap_or_default();
             self.track_artist = metadata.artist.unwrap_or_default();
