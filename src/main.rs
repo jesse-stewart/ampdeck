@@ -1,5 +1,5 @@
 use ampdeck::logger::{redirect_stdout_stderr, setup_logging};
-use log::{info, warn, error};
+use log::{info, error};
 use tokio::runtime::Runtime;
 use rodio::OutputStream;
 use ampdeck::app::{App, AppResult};

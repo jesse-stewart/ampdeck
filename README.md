@@ -6,12 +6,18 @@ The simple audio player written (poorly) in Rust. `.mp3`, `wav`, and `.flac` fil
 
 Download the latest release from the `release` directory. Be sure you have a `Settings.toml` file in the same directory as the executable. This file is used to configure the application settings.
 
-```test
-./ampdeck
-Settings.toml
+```bash
+wget https://github.com/jesse-stewart/ampdeck/raw/main/release/ampdeck
 ```
 
 ### Settings.toml
+
+Create and modify the `Settings.toml` file in the same directory as the executable. Open the file with your favorite text editor and add the following configuration:
+
+```bash
+touch Settings.toml
+sudo nano Settings.toml
+```
 
 ```toml
 music_directory = "./tracks"
@@ -19,6 +25,11 @@ music_directory = "./tracks"
 
 ### Upload audio files
 Upload audio files to `music_directory`. Currently only supports `.mp3`, 'wav', and `.flac` files. Sorry `.m4a` and `.ogg` files, you aren't invited.
+
+```bash
+mkdir tracks
+cp /path/to/audio/files/* tracks/
+```
 
 ## Usage
 
