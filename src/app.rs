@@ -2,6 +2,7 @@ use std::io::{self};
 use std::error;
 use walkdir::WalkDir;
 use crate::audio::Audio;
+use crate::meta::Meta;
 use log::{info, error};
 
 /// Application result type.
@@ -68,6 +69,7 @@ impl App {
         } else if self.loop_playlist {
             self.track_index = 0;
         }
+        self.update_meta().await;
         if self.playing {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 Box::pin(self.increment_track(audio)).await;
@@ -85,6 +87,7 @@ impl App {
         } else if let Some(res) = self.track_index.checked_sub(1) {
             self.track_index = res;
         }
+        self.update_meta().await;
         if self.playing {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 Box::pin(self.decrement_track(audio)).await;
@@ -114,7 +117,18 @@ impl App {
         self.set_volume(rounded_volume, &audio).await;
     }
 
+    pub async fn update_meta(&mut self) {
+        let meta = Meta::new();
+        if let Ok(metadata) = meta.get_audio_metadata(&self.track_list[self.track_index]) {
+            self.track_file = metadata.file.unwrap_or_default();
+            self.track_title = metadata.title.unwrap_or_default();
+            self.track_artist = metadata.artist.unwrap_or_default();
+            self.track_album = metadata.album.unwrap_or_default();
+        }
+    }
+
     pub async fn play_audio(&mut self, audio: &Audio) -> AppResult<()> {
+        self.update_meta().await;
         if self.sink_empty {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 self.increment_track(audio).await;
