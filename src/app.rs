@@ -2,6 +2,7 @@ use std::io::{self};
 use std::error;
 use walkdir::WalkDir;
 use crate::audio::Audio;
+use log::{info, warn, error};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -159,28 +160,48 @@ impl App {
     }
 
     pub fn load_tracks(&mut self, folder_path: &str) -> Result<(), io::Error> {
-        let mut tracks = WalkDir::new(folder_path)
+        let mut tracks = vec![];
+    
+        for entry in WalkDir::new(folder_path)
             .sort_by(|a, b| a.file_name().cmp(b.file_name())) // Sort entries alphabetically by file name
-            .into_iter()
-            .filter_map(|entry| entry.ok()) // Handle WalkDir errors here
-            .filter_map(|e| {
-                let path = e.path();
-                if path.is_file() &&
-                    path.file_name()
-                        .map(|name| !name.to_string_lossy().starts_with('.'))
-                        .unwrap_or(false) && // Check that the file does not start with '.'
-                    path.extension()
-                        .map_or(false, |ext| ext.eq_ignore_ascii_case("mp3") || ext.eq_ignore_ascii_case("wav") || ext.eq_ignore_ascii_case("flac")) {
-                    Some(path.to_string_lossy().into_owned())
-                } else {
-                    None
+        {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) => {
+                    error!("Error reading directory entry: {}", e);
+                    continue; // Skip this entry and log the error
                 }
-            })
-            .collect::<Vec<String>>();
+            };
+    
+            let path = entry.path();
+            if path.is_file() {
+                let is_hidden = path.file_name()
+                    .map(|name| name.to_string_lossy().starts_with('.'))
+                    .unwrap_or(true); // Assume hidden if there's any issue getting the file name
+    
+                let valid_extension = path.extension()
+                    .map_or(false, |ext| ext.eq_ignore_ascii_case("mp3") || ext.eq_ignore_ascii_case("wav") || ext.eq_ignore_ascii_case("flac"));
+    
+                if !is_hidden && valid_extension {
+                    tracks.push(path.to_string_lossy().into_owned());
+                }
+            }
+        }
+    
+        if tracks.is_empty() {
+            error!("No valid tracks found in the specified folder.");
+            return Err(io::Error::new(io::ErrorKind::NotFound, "No valid tracks found"));
+        } else {
+            info!("Loaded {} tracks from {}", tracks.len(), folder_path);
+        }
+    
         tracks.sort(); // Sort the track list alphabetically
         self.track_list = tracks;
+    
         Ok(())
     }
+    
+    
     
 
     pub fn set_track_duration(&mut self, duration: u64) {

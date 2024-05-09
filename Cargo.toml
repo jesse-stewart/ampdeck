@@ -15,8 +15,11 @@ walkdir = "2"
 wav = "1.0.0"
 mp3-metadata = "0.3.4"
 metaflac = "0.2.5"
-symphonia = "0.3.0"
 log = "0.4"
 simplelog = "0.11"
 serde = "1.0.200"
 config = "0.14.0"
+
+cpal = "0.13"
+symphonia = { version = "0.4", features = ["default", "mp3", "wav", "flac", "aac"] }
+libc = "0.2.154"
