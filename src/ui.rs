@@ -23,7 +23,8 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 title: {}\n\
                 artist: {}\n\
                 album: {}\n\
-                index: {}\n\
+                track: {}\n\
+                of: {}\n\n\
                 Playing: {}\n\
                 Paused: {}\n\
                 Volume: {}\n\
@@ -35,7 +36,8 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 app.track_title,
                 app.track_artist,
                 app.track_album,
-                app.track_index,
+                app.track_index + 1,
+                app.track_list.len(),
                 app.playing,
                 app.paused,
                 app.volume,

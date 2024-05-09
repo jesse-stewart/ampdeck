@@ -1,4 +1,5 @@
-use ampdeck::logger::setup_logging;
+use ampdeck::logger::{redirect_stdout_stderr, setup_logging};
+use log::{info, warn, error};
 use tokio::runtime::Runtime;
 use rodio::OutputStream;
 use ampdeck::app::{App, AppResult};
@@ -19,14 +20,26 @@ struct Config {
 }
 
 fn load_config() -> Result<Config, ConfigError> {
-    Configuration::builder()
+    match Configuration::builder()
         .add_source(File::new("./Settings.toml", FileFormat::Toml))
-        .build()?
-        .try_deserialize::<Config>()
+        .build()
+        .and_then(|config| config.try_deserialize::<Config>())
+    {
+        Ok(cfg) => {
+            info!("Loaded config file: {:?}", cfg);
+            Ok(cfg)
+        }
+        Err(err) => {
+            error!("Failed to load config: {}", err);
+            Err(err)
+        }
+    }
 }
 
 fn main() -> AppResult<()> {
     setup_logging().unwrap();
+    redirect_stdout_stderr();
+    info!("Starting Ampdeck"); 
     let cfg = load_config().unwrap();
     let rt = Runtime::new()?;
     rt.block_on(async_main(cfg))
