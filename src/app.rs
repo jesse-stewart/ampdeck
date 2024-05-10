@@ -1,5 +1,7 @@
-use std::io::{self};
+use std::fs::{self, File};
+use std::io::{self, Read};
 use std::error;
+use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 use crate::audio::Audio;
 use crate::meta::Meta;
@@ -49,6 +51,12 @@ impl Default for App {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct AppState {
+    pub track_index: usize,
+    pub volume: f32,
+}
+
 impl App {
     /// Constructs a new instance of [`App`].
     pub fn new() -> Self {
@@ -63,6 +71,17 @@ impl App {
         self.running = false;
     }
 
+    pub fn read_state() -> io::Result<AppState> {
+        let mut contents = String::new();
+        File::open("state.json")?.read_to_string(&mut contents)?;
+        Ok(serde_json::from_str(&contents).unwrap_or(AppState { track_index: 0, volume: 0.05}))
+    }
+    
+    pub  fn write_state(state: &AppState) -> io::Result<()> {
+        let serialized = serde_json::to_string(state)?;
+        fs::write("state.json", serialized)
+    }
+
     pub async fn increment_track(&mut self, audio: &Audio) {
         audio.stop().await;
         if self.track_index < self.track_list.len() - 1 {
@@ -71,6 +90,7 @@ impl App {
             self.track_index = 0;
         }
         self.update_meta().await;
+        let _ = App::write_state(&AppState { track_index: self.track_index, volume: self.volume });
         if self.playing {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 Box::pin(self.increment_track(audio)).await;
@@ -89,6 +109,7 @@ impl App {
             self.track_index = res;
         }
         self.update_meta().await;
+        let _ = App::write_state(&AppState { track_index: self.track_index, volume: self.volume});
         if self.playing {
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 Box::pin(self.decrement_track(audio)).await;
@@ -108,6 +129,7 @@ impl App {
         const VOLUME_INCREMENT: f32 = 0.01;
         let new_volume = (self.volume + VOLUME_INCREMENT).min(1.0); // Ensure volume doesn't exceed 1.0
         let rounded_volume = (new_volume * 1000.0).round() / 1000.0; 
+        let _ = App::write_state(&AppState { track_index: self.track_index, volume: rounded_volume });
         self.set_volume(rounded_volume, &audio).await;
     }
     
@@ -115,10 +137,12 @@ impl App {
         const VOLUME_DECREMENT: f32 = 0.01;
         let new_volume = (self.volume - VOLUME_DECREMENT).max(0.0); // Ensure volume doesn't go below 0.0
         let rounded_volume = (new_volume * 1000.0).round() / 1000.0; 
+        let _ = App::write_state(&AppState { track_index: self.track_index, volume: rounded_volume });
         self.set_volume(rounded_volume, &audio).await;
     }
 
     pub async fn update_meta(&mut self) {
+        // while we are at it, update the Settings.toml file with the current track index
         let path = self.track_list[self.track_index].clone();
         let meta = Meta::new();
     
@@ -198,10 +222,19 @@ impl App {
             };
             self.track_index = next_track;
             self.update_meta().await;
+            let _ = App::write_state(&AppState { track_index: self.track_index, volume: self.volume });
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 self.increment_track(audio).await;
             }
         }
+    }
+
+    pub fn initialize_state(&mut self, continue_session: bool) {
+        let state = App::read_state().unwrap();
+        if continue_session {
+            self.track_index = state.track_index;
+        }
+        self.volume = state.volume;
     }
 
     pub fn load_tracks(&mut self, folder_path: &str) -> Result<(), io::Error> {

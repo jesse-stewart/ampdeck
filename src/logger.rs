@@ -4,7 +4,7 @@ use std::io::{self, Read, Write};
 use log::error;
 extern crate libc;
 use std::os::unix::io::AsRawFd;
-use libc::{dup2, STDOUT_FILENO};
+use libc::{dup2, STDERR_FILENO};
 
 pub fn setup_logging() -> Result<(), log::SetLoggerError> {
     // make sure ./logs directory exists
@@ -36,10 +36,10 @@ pub fn redirect_stdout_stderr() {
 
     unsafe {
         // Duplicate the log file fd to stdout
-        dup2(fd, STDOUT_FILENO);
+        // dup2(fd, STDOUT_FILENO);
         
         // Duplicate the log file fd to stderr
-        // dup2(fd, STDERR_FILENO);
+        dup2(fd, STDERR_FILENO);
     }
 }
 pub fn get_logs_entries() -> String {
