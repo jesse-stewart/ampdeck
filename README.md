@@ -30,7 +30,10 @@ sudo nano Settings.toml
 
 ```toml
 music_directory = "./tracks"
+continue_session = true
 ```
+
+the `continue_session` setting is used to determine if the application should continue playing the last track when the application is restarted. If `continue_session` is set to `false`, the application will start playing the first track in the `music_directory`.
 
 ### Upload audio files
 Upload audio files to `music_directory`. Currently only supports `.mp3`, 'wav', and `.flac` files. Sorry `.m4a` and `.ogg` files, you aren't invited.

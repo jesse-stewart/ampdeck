@@ -16,6 +16,7 @@ use config::{Config as Configuration, File, FileFormat, ConfigError};
 #[derive(Debug, Deserialize)]
 struct Config {
     music_directory: String,
+    continue_session: bool,
 }
 
 fn load_config() -> Result<Config, ConfigError> {
@@ -53,7 +54,7 @@ async fn async_main(cfg: Config) -> AppResult<()> {
     let mut app = App::new();
 
     // Initialize the terminal user interface.
-    let backend = CrosstermBackend::new(io::stderr());
+    let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
     let events = EventHandler::new(1000);
     let mut tui = Tui::new(terminal, events);
@@ -61,6 +62,7 @@ async fn async_main(cfg: Config) -> AppResult<()> {
 
     // load all the tracks in the the tracks directory
     app.load_tracks(cfg.music_directory.as_str())?;
+    app.initialize_state(cfg.continue_session);
     app.update_meta().await;
 
     // Start the main loop.
