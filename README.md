@@ -1,6 +1,15 @@
 # AmpDeck
+```
+ _____           ____          _   
+|  _  |_____ ___|    \ ___ ___| |_ 
+|     |     | . |  |  | -_|  _| '_|
+|__|__|_|_|_|  _|____/|___|___|_,_|
+            |_|                                               
+```
 
 The simple audio player written (poorly) in Rust. `.mp3`, `wav`, and `.flac` files are supported.
+
+![Image](assets/image.png "Text user interface screenshot for Ampdeck")
 
 ## Install
 

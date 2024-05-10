@@ -1,6 +1,6 @@
 use simplelog::*;
 use std::fs::{File, OpenOptions};
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use log::error;
 extern crate libc;
 use std::os::unix::io::AsRawFd;
@@ -11,7 +11,7 @@ pub fn setup_logging() -> Result<(), log::SetLoggerError> {
     std::fs::create_dir_all("./logs").unwrap();
     let log_file = File::create("./logs/log.log").unwrap();
     CombinedLogger::init(vec![
-        WriteLogger::new(log::LevelFilter::Info, Config::default(), log_file),
+        WriteLogger::new(log::LevelFilter::Warn, Config::default(), log_file),
     ])
 }
 
@@ -42,4 +42,11 @@ pub fn redirect_stdout_stderr() {
         // dup2(fd, STDERR_FILENO);
     }
 }
-
+pub fn get_logs_entries() -> String {
+    let log_file = File::open("./logs/log.log").unwrap();
+    let mut reader = io::BufReader::new(log_file);
+    let mut logs = String::new();
+    reader.read_to_string(&mut logs).unwrap();
+    logs = logs.lines().rev().take(50).collect::<Vec<&str>>().join("\n");
+    logs
+}

@@ -67,6 +67,7 @@ async fn async_main(cfg: Config) -> AppResult<()> {
     while app.running {
         let progress = audio.elapsed_time().await;
         app.track_progress = progress.as_secs();
+        app.check_and_advance_track(&audio).await;
 
         // Render the user interface.
         tui.draw(&mut app)?;
