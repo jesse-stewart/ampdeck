@@ -1,6 +1,7 @@
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::error;
+use std::path::Path;
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 use crate::audio::Audio;
@@ -73,8 +74,14 @@ impl App {
 
     pub fn read_state() -> io::Result<AppState> {
         let mut contents = String::new();
-        File::open("state.json")?.read_to_string(&mut contents)?;
-        Ok(serde_json::from_str(&contents).unwrap_or(AppState { track_index: 0, volume: 0.05}))
+        let file_path = "state.json";
+        if !Path::new(file_path).exists() {
+            let default_state = AppState { track_index: 0, volume: 0.05 };
+            let serialized = serde_json::to_string(&default_state)?;
+            fs::write(file_path, serialized)?;
+        }
+        File::open(file_path)?.read_to_string(&mut contents)?;
+        Ok(serde_json::from_str(&contents).unwrap_or(AppState { track_index: 0, volume: 0.05 }))
     }
     
     pub  fn write_state(state: &AppState) -> io::Result<()> {

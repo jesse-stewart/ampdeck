@@ -5,7 +5,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::App, logger::get_logs_entries};
+use crate::{app::App};
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {
@@ -91,13 +91,12 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     // Create the main content widgets for each column
     let main_content_1 = Paragraph::new(format!(
-        "Track: {}\nIndex: {}/{}    Progress: {} s   Sink Empty: {}\n\n{}",
+        "Track: {}\nIndex: {}/{}    Progress: {} s   Sink Empty: {}",
         app.track_file,
         app.track_index,
         app.track_list.len(),
         app.track_progress,
         app.sink_empty,
-        get_logs_entries()
     ))
     .block(
         Block::default()
