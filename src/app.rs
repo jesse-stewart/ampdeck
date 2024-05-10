@@ -197,6 +197,7 @@ impl App {
                 self.track_index + 1
             };
             self.track_index = next_track;
+            self.update_meta().await;
             if let Err(_) = audio.play(&self.track_list[self.track_index], self.volume).await {
                 self.increment_track(audio).await;
             }

@@ -30,7 +30,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     // Split the main content area into 2 columns
     let main_content_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints([Constraint::Min(1), Constraint::Max(20)])
         .split(chunks[2]);
 
     // Split the stutus area into 5 columns
