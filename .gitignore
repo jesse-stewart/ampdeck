@@ -1,3 +1,4 @@
-/target
-/tracks
-/logs
+/target/
+/tracks/
+/logs/
+state.json
