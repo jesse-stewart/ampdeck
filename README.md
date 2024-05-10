@@ -15,13 +15,26 @@ The simple audio player written (poorly) in Rust. `.mp3`, `wav`, and `.flac` fil
 
 Download the latest release from the `release` directory. Be sure you have a `Settings.toml` file in the same directory as the executable. This file is used to configure the application settings.
 
+### Raspberry Pi
 ```bash
-wget https://github.com/jesse-stewart/ampdeck/raw/main/release/ampdeck
+wget https://github.com/jesse-stewart/ampdeck/raw/main/release/aarch64-unknown-linux-gnu/ampdeck
+```
+
+### MacOS
+```bash
+wget https://github.com/jesse-stewart/ampdeck/raw/main/release/x86_64-apple-darwin/ampdeck
+```
+
+### Windows (64-bit)
+Just download the executable and config file from the link below and place them in the same directory.
+```bash
+https://github.com/jesse-stewart/ampdeck/raw/main/release/x86_64-pc-windows-gnu/ampdeck.exe
+https://github.com/jesse-stewart/ampdeck/raw/main/release/Settings.toml
 ```
 
 ### Settings.toml
 
-Create and modify the `Settings.toml` file in the same directory as the executable. Open the file with your favorite text editor and add the following configuration:
+Create/modify the `Settings.toml` file in the same directory as the executable. Open the file with your favorite text editor and add the following configuration:
 
 ```bash
 touch Settings.toml
@@ -72,7 +85,6 @@ src/
 ├── event.rs       -> handles the terminal events (key press, mouse click, resize, etc.)
 ├── handler.rs     -> handles the key press events and updates the application
 ├── lib.rs         -> module definitions
-├── logger.rs      -> handles error logging
 ├── main.rs        -> entry-point
 ├── meta.rs        -> get the metadata of audio files
 ├── tui.rs         -> initializes/exits the terminal interface
